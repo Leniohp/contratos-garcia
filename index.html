@@ -20,6 +20,12 @@
   .pill svg{width:16px;height:16px}
   .whoami{font-size:12px;color:var(--muted);font-family:Arial,sans-serif}
   .wrap{padding:24px 32px 60px;max-width:900px;margin:0 auto}
+  .busca-wrap{position:relative;margin-bottom:16px}
+  .busca-wrap svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--muted);pointer-events:none}
+  #busca{width:100%;background:var(--panel2);color:var(--ink);border:1px solid var(--accent);border-radius:10px;padding:12px 40px 12px 42px;font-size:14px;font-family:Arial,sans-serif}
+  #busca:focus{outline:none;border-color:#f0c46a}
+  .busca-clear{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:0;color:var(--muted);font-size:20px;line-height:1;cursor:pointer;display:none}
+  .busca-clear.on{display:block}
   .empty{text-align:center;color:var(--muted);font-family:Arial,sans-serif;padding:60px 20px;font-size:14px}
   .empty svg{width:46px;height:46px;opacity:.4;margin-bottom:14px}
   .clist{display:flex;flex-direction:column;gap:12px}
@@ -86,6 +92,13 @@
   </div>
 </header>
 <div class="wrap">
+  <div class="busca-wrap">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+    <input id="busca" type="text" inputmode="numeric" maxlength="4"
+      placeholder="Buscar contrato — 4 últimos números antes do -ano (ex: 1825)"
+      oninput="onBusca()">
+    <button class="busca-clear" id="buscaClear" onclick="limparBusca()" title="Limpar" aria-label="Limpar">×</button>
+  </div>
   <div id="lista"></div>
 </div>
 </div>
@@ -165,12 +178,36 @@ async function carregar(){
 
 function esc(s){return (s||"").replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
+// ===== BUSCA por 4 dígitos antes do -ano (ex.: 0040101825-2026 -> 1825) =====
+function onBusca(){
+  const v=document.getElementById("busca").value.replace(/\D/g,"").slice(0,4);
+  document.getElementById("busca").value=v;
+  document.getElementById("buscaClear").classList.toggle("on", v.length>0);
+  render();
+}
+function limparBusca(){
+  document.getElementById("busca").value="";
+  document.getElementById("buscaClear").classList.remove("on");
+  render();
+}
+// Extrai os 4 dígitos que ficam colados antes do "-ANO" no título
+function quatroDigitos(titulo){
+  const m=(titulo||"").match(/(\d{4})-\d{4}\b/);
+  return m ? m[1] : "";
+}
+
 function render(){
-  if(!contratos.length){
-    lista.innerHTML=`<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/></svg><br>Nenhum contrato cadastrado ainda.<br>Clique em <b>Novo cadastro</b> para começar.</div>`;
+  const termo=(document.getElementById("busca")?.value||"").trim();
+  let lista_c = contratos;
+  if(termo){
+    lista_c = contratos.filter(c=>quatroDigitos(c.titulo).startsWith(termo));
+  }
+
+  if(!lista_c.length){
+    lista.innerHTML=`<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/></svg><br>${termo?("Nenhum contrato encontrado para <b>"+esc(termo)+"</b>."):"Nenhum contrato cadastrado ainda.<br>Clique em <b>Novo cadastro</b> para começar."}</div>`;
     return;
   }
-  lista.innerHTML=`<div class="clist">`+contratos.map(c=>{
+  lista.innerHTML=`<div class="clist">`+lista_c.map(c=>{
     let dia="--",mes="";
     if(c.data){const p=c.data.split("-");dia=p[2];mes=MES_NOME[+p[1]-1]+" "+p[0];}
     const fileHtml = c.file_path
