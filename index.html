@@ -82,7 +82,7 @@
 <div id="app">
 <header>
   <h1>Contratos do grupo</h1>
-  <div class="sub">Grupo Garcia — Recuperação Judicial · documentos contratuais</div>
+  <div class="sub">Grupo Garcia — Recuperação Judicial · documentos contratuais <span id="contador" style="color:var(--accent);font-weight:bold"></span></div>
   <div class="bar">
     <button class="pill" id="btnNovo" onclick="abrirNovo()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
@@ -201,6 +201,14 @@ function render(){
   let lista_c = contratos;
   if(termo){
     lista_c = contratos.filter(c=>quatroDigitos(c.titulo).startsWith(termo));
+  }
+
+  // Contador no topo
+  const cont=document.getElementById("contador");
+  if(cont){
+    if(!contratos.length){cont.textContent="";}
+    else if(termo){cont.textContent="· "+lista_c.length+" de "+contratos.length+" contratos";}
+    else{cont.textContent="· "+contratos.length+(contratos.length===1?" contrato":" contratos");}
   }
 
   if(!lista_c.length){
